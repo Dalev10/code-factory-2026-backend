@@ -1,0 +1,37 @@
+services:
+  # SERVICIO 1: Base de Datos PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: pgli_db
+    restart: always
+    environment:
+      POSTGRES_USER: pgli_admin
+      POSTGRES_PASSWORD: pgli_password
+      POSTGRES_DB: pgli_local
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - pgli_network
+
+  # SERVICIO 2: Backend Spring Boot
+  api:
+    build: .
+    container_name: pgli_api
+    restart: on-failure
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - pgli_network
+
+# Definición de volúmenes persistentes
+volumes:
+  pg_data:
+
+# Definición de la red virtual interna
+networks:
+  pgli_network:
+    driver: bridge
