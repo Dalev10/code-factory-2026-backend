@@ -1,6 +1,7 @@
 package com.code_factory.backend.identity.application.service;
 
 import com.code_factory.backend.identity.application.port.in.RegisterUserUseCase;
+import com.code_factory.backend.identity.application.port.out.PasswordEncoderPort;
 import com.code_factory.backend.identity.application.port.out.UserRepositoryPort;
 import com.code_factory.backend.identity.domain.model.User;
 
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class RegisterUserService implements RegisterUserUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
+    private final PasswordEncoderPort passwordEncoderPort;
 
     @Override
     public User register(User user) {
@@ -22,7 +24,9 @@ public class RegisterUserService implements RegisterUserUseCase {
             throw new RuntimeException("Email already in use: " + user.getEmail());
         }
 
-        // Aquí más adelante cifraremos la contraseña antes de guardar
+        // Cifrar la contraseña antes de guardar
+        user.setPassword(passwordEncoderPort.encode(user.getPassword()));
+
         return userRepositoryPort.save(user);
     }
 }
