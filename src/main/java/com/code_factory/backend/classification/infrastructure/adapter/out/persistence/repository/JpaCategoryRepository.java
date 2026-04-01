@@ -12,8 +12,8 @@ import java.util.UUID;
 public interface JpaCategoryRepository extends JpaRepository<CategoryEntity, UUID> {
 
     @Query("SELECT c FROM CategoryEntity c WHERE c.userId IS NULL " +
-           "AND (:name IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
-           "AND (:type IS NULL OR c.type = :type)")
+        "AND (CAST(:name AS string) IS NULL OR LOWER(CAST(c.name AS string)) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%'))) " +
+        "AND (:type IS NULL OR c.type = :type)")
     List<CategoryEntity> findGlobalWithFilters(
             @Param("name") String name, 
             @Param("type") CategoryType type
