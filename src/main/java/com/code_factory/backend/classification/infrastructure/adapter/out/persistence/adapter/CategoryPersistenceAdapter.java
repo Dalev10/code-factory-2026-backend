@@ -2,6 +2,7 @@ package com.code_factory.backend.classification.infrastructure.adapter.out.persi
 
 import com.code_factory.backend.classification.application.port.out.CategoryRepositoryPort;
 import com.code_factory.backend.classification.domain.model.Category;
+import com.code_factory.backend.classification.domain.model.CategoryType;
 import com.code_factory.backend.classification.infrastructure.adapter.out.persistence.mapper.CategoryMapper;
 import com.code_factory.backend.classification.infrastructure.adapter.out.persistence.repository.JpaCategoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +19,8 @@ public class CategoryPersistenceAdapter implements CategoryRepositoryPort {
     private final CategoryMapper categoryMapper;
 
     @Override
-    public List<Category> findGlobalCategories() {
-        return jpaCategoryRepository.findByUserIdIsNull()
+    public List<Category> findGlobalCategories(String name, CategoryType type) {
+        return jpaCategoryRepository.findGlobalWithFilters(name, type)
                 .stream()
                 .map(categoryMapper::toDomain)
                 .collect(Collectors.toList());
