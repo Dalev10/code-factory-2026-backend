@@ -18,7 +18,7 @@ public class CategoryEntity {
     @Id
     private UUID id;
 
-    @Column(nullable = false, length = 100, columnDefinition = "varchar(100)")
+    @Column(unique = true, nullable = false, length = 100, columnDefinition = "varchar(100)")
     private String name;
 
     @Enumerated(EnumType.STRING)
