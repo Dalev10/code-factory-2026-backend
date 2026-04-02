@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
@@ -24,5 +26,11 @@ public class CategoryPersistenceAdapter implements CategoryRepositoryPort {
                 .stream()
                 .map(categoryMapper::toDomain)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<Category> findById(UUID id) {
+        return jpaCategoryRepository.findById(id)
+                .map(categoryMapper::toDomain);
     }
 }
