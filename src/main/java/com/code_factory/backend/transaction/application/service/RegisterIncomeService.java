@@ -3,9 +3,8 @@ package com.code_factory.backend.transaction.application.service;
 import com.code_factory.backend.classification.application.port.out.CategoryRepositoryPort;
 import com.code_factory.backend.classification.domain.model.CategoryType;
 import com.code_factory.backend.identity.application.port.out.UserRepositoryPort;
-import com.code_factory.backend.transaction.application.port.in.RegisterExpenseCommand;
 import com.code_factory.backend.transaction.application.port.in.RegisterIncomeCommand;
-import com.code_factory.backend.transaction.application.port.in.RegisterTransactionUseCase;
+import com.code_factory.backend.transaction.application.port.in.RegisterIncomeUseCase;
 import com.code_factory.backend.transaction.application.port.out.TransactionRepositoryPort;
 import com.code_factory.backend.transaction.domain.model.Transaction;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +14,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class RegisterTransactionService implements RegisterTransactionUseCase {
+public class RegisterIncomeService implements RegisterIncomeUseCase {
 
     private final TransactionRepositoryPort transactionRepositoryPort;
     private final UserRepositoryPort userRepositoryPort;
@@ -47,33 +46,4 @@ public class RegisterTransactionService implements RegisterTransactionUseCase {
 
         return transactionRepositoryPort.save(transaction);
     }
-
-    @Override
-    public Transaction registerExpense(RegisterExpenseCommand command) {
-
-        // 1. Validar usuario
-        userRepositoryPort.findById(command.getUserId())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        // 2. Validar categoría
-        var category = categoryRepositoryPort.findById(command.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
-
-        //  CAMBIO CLAVE
-        if (category.getType() != CategoryType.EXPENSE) {
-            throw new RuntimeException("La categoría debe ser de tipo GASTO");
-        }
-
-        // 3. Crear transacción
-        Transaction transaction = Transaction.builder()
-                .id(UUID.randomUUID())
-                .userId(command.getUserId())
-                .categoryId(command.getCategoryId())
-                .amount(command.getAmount())
-                .description(command.getDescription())
-                .transactionDate(command.getTransactionDate())
-                .build();
-
-        return transactionRepositoryPort.save(transaction);
-}
 }

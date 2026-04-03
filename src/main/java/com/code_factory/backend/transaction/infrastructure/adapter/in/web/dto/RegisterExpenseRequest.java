@@ -8,18 +8,18 @@ import java.util.UUID;
 
 @Data
 public class RegisterExpenseRequest {
-    
-    @NotNull @Positive
+    @NotNull(message = "El monto es obligatorio")
+    @Positive(message = "El monto debe ser positivo")
     private BigDecimal amount;
-
+    
     private String description;
-
-    @NotNull
+    
+    @NotNull(message = "La fecha es obligatoria")
     private LocalDate transactionDate;
-
-    @NotNull
+    
+    @NotNull(message = "El ID de usuario es obligatorio")
     private UUID userId;
-
-    @NotNull
+    
+    @NotNull(message = "El ID de categoría es obligatorio")
     private UUID categoryId;
 }
