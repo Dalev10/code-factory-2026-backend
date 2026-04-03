@@ -7,8 +7,10 @@ import com.code_factory.backend.identity.infrastructure.adapter.out.persistence.
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -44,5 +46,13 @@ public class UserPersistenceAdapter implements UserRepositoryPort {
     @Override
     public boolean existsById(UUID id) {
         return jpaUserRepository.existsById(id);
+    }
+
+    @Override
+    public List<User> findAllFiltered(String email, String firstName, String lastName) {
+        return jpaUserRepository.findWithFilters(email, firstName, lastName)
+                .stream()
+                .map(userMapper::toDomain)
+                .collect(Collectors.toList());
     }
 }
