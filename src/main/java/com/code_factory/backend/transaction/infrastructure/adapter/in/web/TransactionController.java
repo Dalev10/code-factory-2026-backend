@@ -2,16 +2,20 @@ package com.code_factory.backend.transaction.infrastructure.adapter.in.web;
 
 import com.code_factory.backend.classification.application.port.out.CategoryRepositoryPort;
 import com.code_factory.backend.transaction.application.port.in.ListTransactionsUseCase;
-import com.code_factory.backend.transaction.application.port.in.RegisterTransactionUseCase;
 import com.code_factory.backend.transaction.application.port.in.RegisterIncomeCommand;
+import com.code_factory.backend.transaction.application.port.in.RegisterIncomeUseCase;
+import com.code_factory.backend.transaction.application.port.in.RegisterExpenseCommand;
+import com.code_factory.backend.transaction.application.port.in.RegisterExpenseUseCase;
 import com.code_factory.backend.transaction.domain.model.Transaction;
 import com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto.RegisterIncomeRequest;
+import com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto.RegisterExpenseRequest;
 import com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto.TransactionResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -20,9 +24,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TransactionController {
 
-    private final RegisterTransactionUseCase registerTransactionUseCase;
+    private final RegisterIncomeUseCase registerIncomeUseCase;
+    private final RegisterExpenseUseCase registerExpenseUseCase;
     private final ListTransactionsUseCase listTransactionsUseCase;
-    private final CategoryRepositoryPort categoryRepositoryPort; // Integración con módulo Classification
+    private final CategoryRepositoryPort categoryRepositoryPort;
 
     @PostMapping("/income")
     public ResponseEntity<Transaction> registerIncome(@Valid @RequestBody RegisterIncomeRequest request) {
@@ -33,8 +38,23 @@ public class TransactionController {
                 request.getDescription(),
                 request.getTransactionDate()
         );
+        // CORREGIDO: Usando el nombre de variable correcto
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(registerTransactionUseCase.registerIncome(command));
+                .body(registerIncomeUseCase.registerIncome(command));
+    }
+
+    @PostMapping("/expense")
+    public ResponseEntity<Transaction> registerExpense(@Valid @RequestBody RegisterExpenseRequest request) {
+        var command = new RegisterExpenseCommand(
+                request.getUserId(),
+                request.getCategoryId(),
+                request.getAmount(),
+                request.getDescription(),
+                request.getTransactionDate()
+        );
+        // CORREGIDO: Usando el nombre de variable correcto
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(registerExpenseUseCase.registerExpense(command));
     }
 
     @GetMapping("/history/{userId}")
@@ -46,7 +66,6 @@ public class TransactionController {
         List<TransactionResponse> history = listTransactionsUseCase.getHistoryByUserId(userId, limit, offset)
                 .stream()
                 .map(t -> {
-                    // Enriquecimiento de datos consultando el puerto de categorías
                     var category = categoryRepositoryPort.findById(t.getCategoryId()).orElse(null);
                     
                     return TransactionResponse.builder()
