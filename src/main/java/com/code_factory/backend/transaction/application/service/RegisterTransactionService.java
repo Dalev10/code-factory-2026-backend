@@ -7,7 +7,6 @@ import com.code_factory.backend.transaction.application.port.in.RegisterExpenseC
 import com.code_factory.backend.transaction.application.port.in.RegisterIncomeCommand;
 import com.code_factory.backend.transaction.application.port.in.RegisterTransactionUseCase;
 import com.code_factory.backend.transaction.application.port.out.TransactionRepositoryPort;
-import com.code_factory.backend.transaction.application.port.in.RegisterExpenseCommand;
 import com.code_factory.backend.transaction.domain.model.Transaction;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
