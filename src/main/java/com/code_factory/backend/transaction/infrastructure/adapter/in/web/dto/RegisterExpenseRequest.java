@@ -7,11 +7,11 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
-public class RegisterIncomeRequest {
+public class RegisterExpenseRequest {
     @NotNull(message = "El monto es obligatorio")
     @Positive(message = "El monto debe ser positivo")
     private BigDecimal amount;
-
+    
     private String description;
     
     @NotNull(message = "La fecha es obligatoria")
