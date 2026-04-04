@@ -1,5 +1,6 @@
 package com.code_factory.backend.transaction.application.port.out;
 
+import com.code_factory.backend.classification.domain.model.CategoryType;
 import com.code_factory.backend.transaction.domain.model.Transaction;
 import java.util.List;
 import java.util.Optional;
@@ -12,7 +13,7 @@ public interface TransactionRepositoryPort {
 
     // Para futuras consultas (Paginación agnóstica)
     // Usamos tipos simples de Java
-    List<Transaction> findByUserId(UUID userId, int limit, int offset);
+    List<Transaction> findByUserIdAndType(UUID userId, CategoryType type, int limit, int offset);
     
     Optional<Transaction> findById(UUID id);
 }

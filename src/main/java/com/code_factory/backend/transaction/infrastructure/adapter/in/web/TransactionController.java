@@ -1,6 +1,7 @@
 package com.code_factory.backend.transaction.infrastructure.adapter.in.web;
 
 import com.code_factory.backend.classification.application.port.out.CategoryRepositoryPort;
+import com.code_factory.backend.classification.domain.model.CategoryType;
 import com.code_factory.backend.transaction.application.port.in.ListTransactionsUseCase;
 import com.code_factory.backend.transaction.application.port.in.RegisterIncomeCommand;
 import com.code_factory.backend.transaction.application.port.in.RegisterIncomeUseCase;
@@ -57,17 +58,17 @@ public class TransactionController {
                 .body(registerExpenseUseCase.registerExpense(command));
     }
 
-    @GetMapping("/history/{userId}")
+@GetMapping("/history/{userId}")
     public ResponseEntity<List<TransactionResponse>> getHistory(
             @PathVariable UUID userId,
+            @RequestParam(required = false) CategoryType type, // El filtro mágico
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "0") int offset) {
 
-        List<TransactionResponse> history = listTransactionsUseCase.getHistoryByUserId(userId, limit, offset)
+        List<TransactionResponse> history = listTransactionsUseCase.getHistoryByUserId(userId, type, limit, offset)
                 .stream()
                 .map(t -> {
                     var category = categoryRepositoryPort.findById(t.getCategoryId()).orElse(null);
-                    
                     return TransactionResponse.builder()
                             .id(t.getId())
                             .amount(t.getAmount())
