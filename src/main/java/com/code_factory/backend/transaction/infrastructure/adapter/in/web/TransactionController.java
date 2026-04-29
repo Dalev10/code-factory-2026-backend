@@ -2,6 +2,8 @@ package com.code_factory.backend.transaction.infrastructure.adapter.in.web;
 
 import com.code_factory.backend.classification.application.port.out.CategoryRepositoryPort;
 import com.code_factory.backend.classification.domain.model.CategoryType;
+import com.code_factory.backend.transaction.application.port.in.DeleteTransactionCommand;
+import com.code_factory.backend.transaction.application.port.in.DeleteTransactionUseCase;
 import com.code_factory.backend.transaction.application.port.in.ListTransactionsUseCase;
 import com.code_factory.backend.transaction.application.port.in.RegisterIncomeCommand;
 import com.code_factory.backend.transaction.application.port.in.RegisterIncomeUseCase;
@@ -28,6 +30,7 @@ public class TransactionController {
     private final RegisterIncomeUseCase registerIncomeUseCase;
     private final RegisterExpenseUseCase registerExpenseUseCase;
     private final ListTransactionsUseCase listTransactionsUseCase;
+    private final DeleteTransactionUseCase deleteTransactionUseCase;
     private final CategoryRepositoryPort categoryRepositoryPort;
 
     @PostMapping("/income")
@@ -82,5 +85,13 @@ public class TransactionController {
                 .toList();
 
         return ResponseEntity.ok(history);
+    }
+
+    @DeleteMapping("/{transactionId}")
+    public ResponseEntity<Void> deleteTransaction(
+            @PathVariable UUID transactionId,
+            @RequestParam UUID userId) {
+        deleteTransactionUseCase.deleteTransaction(new DeleteTransactionCommand(transactionId, userId));
+        return ResponseEntity.noContent().build();
     }
 }
