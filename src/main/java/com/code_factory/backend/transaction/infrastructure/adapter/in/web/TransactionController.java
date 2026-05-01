@@ -3,16 +3,21 @@ package com.code_factory.backend.transaction.infrastructure.adapter.in.web;
 import com.code_factory.backend.classification.application.port.out.CategoryRepositoryPort;
 import com.code_factory.backend.classification.domain.model.CategoryType;
 import com.code_factory.backend.transaction.application.port.in.ListTransactionsUseCase;
-import com.code_factory.backend.transaction.application.port.in.RegisterIncomeCommand;
-import com.code_factory.backend.transaction.application.port.in.RegisterIncomeUseCase;
 import com.code_factory.backend.transaction.application.port.in.RegisterExpenseCommand;
 import com.code_factory.backend.transaction.application.port.in.RegisterExpenseUseCase;
+import com.code_factory.backend.transaction.application.port.in.RegisterIncomeCommand;
+import com.code_factory.backend.transaction.application.port.in.RegisterIncomeUseCase;
+import com.code_factory.backend.transaction.application.port.in.UpdateTransactionCategoryCommand;
+import com.code_factory.backend.transaction.application.port.in.UpdateTransactionCategoryUseCase;
 import com.code_factory.backend.transaction.domain.model.Transaction;
-import com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto.RegisterIncomeRequest;
 import com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto.RegisterExpenseRequest;
+import com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto.RegisterIncomeRequest;
 import com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto.TransactionResponse;
+import com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto.UpdateTransactionCategoryRequest;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,10 +33,15 @@ public class TransactionController {
     private final RegisterIncomeUseCase registerIncomeUseCase;
     private final RegisterExpenseUseCase registerExpenseUseCase;
     private final ListTransactionsUseCase listTransactionsUseCase;
+    private final UpdateTransactionCategoryUseCase updateTransactionCategoryUseCase;
     private final CategoryRepositoryPort categoryRepositoryPort;
 
+
     @PostMapping("/income")
-    public ResponseEntity<Transaction> registerIncome(@Valid @RequestBody RegisterIncomeRequest request) {
+    public ResponseEntity<Transaction> registerIncome(
+            @Valid @RequestBody RegisterIncomeRequest request
+    ) {
+
         var command = new RegisterIncomeCommand(
                 request.getUserId(),
                 request.getCategoryId(),
@@ -39,13 +49,17 @@ public class TransactionController {
                 request.getDescription(),
                 request.getTransactionDate()
         );
-        // CORREGIDO: Usando el nombre de variable correcto
+
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(registerIncomeUseCase.registerIncome(command));
     }
 
+
     @PostMapping("/expense")
-    public ResponseEntity<Transaction> registerExpense(@Valid @RequestBody RegisterExpenseRequest request) {
+    public ResponseEntity<Transaction> registerExpense(
+            @Valid @RequestBody RegisterExpenseRequest request
+    ) {
+
         var command = new RegisterExpenseCommand(
                 request.getUserId(),
                 request.getCategoryId(),
@@ -53,34 +67,67 @@ public class TransactionController {
                 request.getDescription(),
                 request.getTransactionDate()
         );
-        // CORREGIDO: Usando el nombre de variable correcto
+
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(registerExpenseUseCase.registerExpense(command));
     }
 
-@GetMapping("/history/{userId}")
+
+    @GetMapping("/history/{userId}")
     public ResponseEntity<List<TransactionResponse>> getHistory(
             @PathVariable UUID userId,
-            @RequestParam(required = false) CategoryType type, // El filtro mágico
+            @RequestParam(required = false) CategoryType type,
             @RequestParam(defaultValue = "10") int limit,
-            @RequestParam(defaultValue = "0") int offset) {
+            @RequestParam(defaultValue = "0") int offset
+    ) {
 
-        List<TransactionResponse> history = listTransactionsUseCase.getHistoryByUserId(userId, type, limit, offset)
+        List<TransactionResponse> history = listTransactionsUseCase
+                .getHistoryByUserId(userId, type, limit, offset)
                 .stream()
-                .map(t -> {
-                    var category = categoryRepositoryPort.findById(t.getCategoryId()).orElse(null);
+                .map(transaction -> {
+
+                    var category = categoryRepositoryPort
+                            .findById(transaction.getCategoryId())
+                            .orElse(null);
+
                     return TransactionResponse.builder()
-                            .id(t.getId())
-                            .amount(t.getAmount())
-                            .description(t.getDescription())
-                            .transactionDate(t.getTransactionDate())
-                            .categoryId(t.getCategoryId())
-                            .categoryName(category != null ? category.getName() : "Desconocida")
-                            .categoryType(category != null ? category.getType() : null)
+                            .id(transaction.getId())
+                            .amount(transaction.getAmount())
+                            .description(transaction.getDescription())
+                            .transactionDate(transaction.getTransactionDate())
+                            .categoryId(transaction.getCategoryId())
+                            .categoryName(
+                                    category != null
+                                            ? category.getName()
+                                            : "Desconocida"
+                            )
+                            .categoryType(
+                                    category != null
+                                            ? category.getType()
+                                            : null
+                            )
                             .build();
                 })
                 .toList();
 
         return ResponseEntity.ok(history);
+    }
+
+
+    @PatchMapping("/{transactionId}/category")
+    public ResponseEntity<Transaction> updateCategory(
+            @PathVariable UUID transactionId,
+            @Valid @RequestBody UpdateTransactionCategoryRequest request
+    ) {
+
+        var command = new UpdateTransactionCategoryCommand(
+                transactionId,
+                request.categoryId()
+        );
+
+        Transaction updatedTransaction =
+                updateTransactionCategoryUseCase.execute(command);
+
+        return ResponseEntity.ok(updatedTransaction);
     }
 }
