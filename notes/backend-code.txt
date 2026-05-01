@@ -1,0 +1,1485 @@
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/test/java/com/code_factory/backend/BackendApplicationTests.java
+
+package com.code_factory.backend;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class BackendApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}
+
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/classification/infrastructure/adapter/in/web/CategoryController.java
+
+package com.code_factory.backend.classification.infrastructure.adapter.in.web;
+
+import com.code_factory.backend.classification.application.port.in.ListCategoriesUseCase;
+import com.code_factory.backend.classification.domain.model.Category;
+import com.code_factory.backend.classification.domain.model.CategoryType;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/categories")
+@RequiredArgsConstructor
+public class CategoryController {
+
+    private final ListCategoriesUseCase listCategoriesUseCase;
+
+    @GetMapping
+    public ResponseEntity<List<Category>> getCategories(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) CategoryType type) {
+        
+        return ResponseEntity.ok(listCategoriesUseCase.getCategories(name, type));
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/classification/infrastructure/adapter/out/persistence/mapper/CategoryMapper.java
+
+package com.code_factory.backend.classification.infrastructure.adapter.out.persistence.mapper;
+
+import com.code_factory.backend.classification.domain.model.Category;
+import com.code_factory.backend.classification.infrastructure.adapter.out.persistence.entity.CategoryEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CategoryMapper {
+
+    public CategoryEntity toEntity(Category domain) {
+        if (domain == null) return null;
+        return CategoryEntity.builder()
+                .id(domain.getId())
+                .name(domain.getName())
+                .type(domain.getType())
+                .userId(domain.getUserId())
+                .build();
+    }
+
+    public Category toDomain(CategoryEntity entity) {
+        if (entity == null) return null;
+        return Category.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .type(entity.getType())
+                .userId(entity.getUserId())
+                .build();
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/classification/infrastructure/adapter/out/persistence/adapter/CategoryPersistenceAdapter.java
+
+package com.code_factory.backend.classification.infrastructure.adapter.out.persistence.adapter;
+
+import com.code_factory.backend.classification.application.port.out.CategoryRepositoryPort;
+import com.code_factory.backend.classification.domain.model.Category;
+import com.code_factory.backend.classification.domain.model.CategoryType;
+import com.code_factory.backend.classification.infrastructure.adapter.out.persistence.mapper.CategoryMapper;
+import com.code_factory.backend.classification.infrastructure.adapter.out.persistence.repository.JpaCategoryRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Component
+@RequiredArgsConstructor
+public class CategoryPersistenceAdapter implements CategoryRepositoryPort {
+
+    private final JpaCategoryRepository jpaCategoryRepository;
+    private final CategoryMapper categoryMapper;
+
+    @Override
+    public List<Category> findGlobalCategories(String name, CategoryType type) {
+        return jpaCategoryRepository.findGlobalWithFilters(name, type)
+                .stream()
+                .map(categoryMapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<Category> findById(UUID id) {
+        return jpaCategoryRepository.findById(id)
+                .map(categoryMapper::toDomain);
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/classification/infrastructure/adapter/out/persistence/repository/JpaCategoryRepository.java
+
+package com.code_factory.backend.classification.infrastructure.adapter.out.persistence.repository;
+
+import com.code_factory.backend.classification.domain.model.CategoryType;
+import com.code_factory.backend.classification.infrastructure.adapter.out.persistence.entity.CategoryEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface JpaCategoryRepository extends JpaRepository<CategoryEntity, UUID> {
+
+    @Query("SELECT c FROM CategoryEntity c WHERE c.userId IS NULL " +
+        "AND (CAST(:name AS string) IS NULL OR LOWER(CAST(c.name AS string)) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%'))) " +
+        "AND (:type IS NULL OR c.type = :type)")
+    List<CategoryEntity> findGlobalWithFilters(
+            @Param("name") String name, 
+            @Param("type") CategoryType type
+    );
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/classification/infrastructure/adapter/out/persistence/entity/CategoryEntity.java
+
+package com.code_factory.backend.classification.infrastructure.adapter.out.persistence.entity;
+
+import com.code_factory.backend.classification.domain.model.CategoryType;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.UUID;
+
+@Entity
+@Table(name = "categories")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CategoryEntity {
+
+    @Id
+    private UUID id;
+
+    @Column(unique = true, nullable = false, length = 100, columnDefinition = "varchar(100)")
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private CategoryType type;
+
+    @Column(name = "user_id")
+    private UUID userId; // Null para categorías globales
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/classification/application/service/ListCategoriesService.java
+
+package com.code_factory.backend.classification.application.service;
+
+import com.code_factory.backend.classification.application.port.in.ListCategoriesUseCase;
+import com.code_factory.backend.classification.application.port.out.CategoryRepositoryPort;
+import com.code_factory.backend.classification.domain.model.Category;
+import com.code_factory.backend.classification.domain.model.CategoryType;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class ListCategoriesService implements ListCategoriesUseCase {
+
+    private final CategoryRepositoryPort categoryRepositoryPort;
+
+    @Override
+    public List<Category> getCategories(String name, CategoryType type) {
+        return categoryRepositoryPort.findGlobalCategories(name, type);
+    }
+}
+
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/classification/application/port/in/ListCategoriesUseCase.java
+
+package com.code_factory.backend.classification.application.port.in;
+
+import com.code_factory.backend.classification.domain.model.Category;
+import com.code_factory.backend.classification.domain.model.CategoryType;
+
+import java.util.List;
+
+public interface ListCategoriesUseCase {
+    List<Category> getCategories(String name, CategoryType type);
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/classification/application/port/out/CategoryRepositoryPort.java
+
+package com.code_factory.backend.classification.application.port.out;
+
+import com.code_factory.backend.classification.domain.model.Category;
+import com.code_factory.backend.classification.domain.model.CategoryType;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface CategoryRepositoryPort {
+    List<Category> findGlobalCategories(String name, CategoryType type);
+    Optional<Category> findById(UUID id);
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/classification/domain/model/Category.java
+
+package com.code_factory.backend.classification.domain.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.UUID;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Category {
+    private UUID id;
+    private String name;
+    private CategoryType type;
+    private UUID userId; // Será null para las categorías pre-establecidas (globales)
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/classification/domain/model/CategoryType.java
+
+package com.code_factory.backend.classification.domain.model;
+
+public enum CategoryType {
+    INCOME,  // Ingreso
+    EXPENSE  // Gasto
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/BackendApplication.java
+
+package com.code_factory.backend;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class BackendApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(BackendApplication.class, args);
+	}
+
+}
+
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/infrastructure/adapter/in/web/UserController.java
+
+package com.code_factory.backend.identity.infrastructure.adapter.in.web;
+
+import com.code_factory.backend.identity.application.port.in.RegisterUserUseCase;
+import com.code_factory.backend.identity.domain.model.User;
+import com.code_factory.backend.identity.infrastructure.adapter.in.web.dto.UserRegistrationRequest;
+import com.code_factory.backend.identity.application.port.in.FindUserUseCase;
+import com.code_factory.backend.identity.infrastructure.adapter.in.web.dto.UserResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
+public class UserController {
+
+    private final RegisterUserUseCase registerUserUseCase;
+    private final FindUserUseCase findUserUseCase;
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@Valid @RequestBody UserRegistrationRequest request) {
+        
+        // Validación de que las contraseñas coincidan
+        if (!request.getPassword().equals(request.getPasswordConfirmation())) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Las contraseñas no coinciden");
+        }
+
+        // Mapeo manual del DTO al Modelo de Dominio
+        User userToRegister = User.builder()
+                .id(UUID.randomUUID()) // Generamos el ID técnico aquí
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(request.getPassword()) // ¡Ojo! Aquí falta cifrarla, lo haremos luego.
+                .build();
+
+        User registeredUser = registerUserUseCase.register(userToRegister);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
+    }
+
+
+        @GetMapping("/users") // Refactorizado de /search a /users
+        public ResponseEntity<List<UserResponse>> getUsers(
+                @RequestParam(required = false) String email,
+                @RequestParam(required = false) String firstName,
+                @RequestParam(required = false) String lastName) {
+        
+        List<UserResponse> users = findUserUseCase.findUsers(email, firstName, lastName)
+                .stream()
+                .map(user -> UserResponse.builder()
+                        .id(user.getId())
+                        .firstName(user.getFirstName())
+                        .lastName(user.getLastName())
+                        .email(user.getEmail())
+                        .build())
+                .toList();
+
+        return ResponseEntity.ok(users);
+
+        }
+
+}
+
+
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/infrastructure/adapter/in/web/dto/UserRegistrationRequest.java
+
+package com.code_factory.backend.identity.infrastructure.adapter.in.web.dto;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+@Data
+public class UserRegistrationRequest {
+
+    @NotBlank(message = "El nombre es obligatorio") 
+    @Size(min = 2, message = "El nombre debe tener al menos 2 caracteres") 
+    private String firstName;
+
+    @NotBlank(message = "El apellido es obligatorio") 
+    @Size(min = 2, message = "El apellido debe tener al menos 2 caracteres") 
+    private String lastName;
+
+    @NotBlank(message = "El correo es obligatorio")
+    @Email(message = "Formato de correo inválido") 
+    private String email;
+
+    @NotBlank(message = "La contraseña es obligatoria")
+    @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres") 
+    private String password;
+
+    @NotBlank(message = "Debes confirmar la contraseña")
+    private String passwordConfirmation;
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/infrastructure/adapter/in/web/dto/UserResponse.java
+
+package com.code_factory.backend.identity.infrastructure.adapter.in.web.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserResponse {
+    private UUID id;
+    private String firstName;
+    private String lastName;
+    private String email;
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/infrastructure/adapter/out/persistence/mapper/UserMapper.java
+
+package com.code_factory.backend.identity.infrastructure.adapter.out.persistence.mapper;
+
+import com.code_factory.backend.identity.domain.model.User;
+import com.code_factory.backend.identity.infrastructure.adapter.out.persistence.entity.UserEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class UserMapper {
+
+    public UserEntity toEntity(User domain) {
+        if (domain == null) return null;
+        
+        return UserEntity.builder()
+                .id(domain.getId())
+                .firstName(domain.getFirstName())
+                .lastName(domain.getLastName())
+                .email(domain.getEmail())
+                .password(domain.getPassword())
+                .build();
+    }
+
+    public User toDomain(UserEntity entity) {
+        if (entity == null) return null;
+
+        return User.builder()
+                .id(entity.getId())
+                .firstName(entity.getFirstName())
+                .lastName(entity.getLastName())
+                .email(entity.getEmail())
+                .password(entity.getPassword())
+                .build();
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/infrastructure/adapter/out/persistence/adapter/UserPersistenceAdapter.java
+
+package com.code_factory.backend.identity.infrastructure.adapter.out.persistence.adapter;
+
+import com.code_factory.backend.identity.application.port.out.UserRepositoryPort;
+import com.code_factory.backend.identity.domain.model.User;
+import com.code_factory.backend.identity.infrastructure.adapter.out.persistence.mapper.UserMapper;
+import com.code_factory.backend.identity.infrastructure.adapter.out.persistence.repository.JpaUserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Component
+@RequiredArgsConstructor
+public class UserPersistenceAdapter implements UserRepositoryPort {
+
+    private final JpaUserRepository jpaUserRepository;
+    private final UserMapper userMapper;
+
+    @Override
+    public User save(User user) {
+        var entity = userMapper.toEntity(user);
+        var savedEntity = jpaUserRepository.save(entity);
+        return userMapper.toDomain(savedEntity);
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return jpaUserRepository.findByEmail(email)
+                .map(userMapper::toDomain);
+    }
+
+    @Override
+    public Optional<User> findById(UUID id) {
+        return jpaUserRepository.findById(id)
+                .map(userMapper::toDomain);
+    }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return jpaUserRepository.existsByEmail(email);
+    }
+
+    @Override
+    public boolean existsById(UUID id) {
+        return jpaUserRepository.existsById(id);
+    }
+
+    @Override
+    public List<User> findAllFiltered(String email, String firstName, String lastName) {
+        return jpaUserRepository.findWithFilters(email, firstName, lastName)
+                .stream()
+                .map(userMapper::toDomain)
+                .collect(Collectors.toList());
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/infrastructure/adapter/out/persistence/repository/JpaUserRepository.java
+
+package com.code_factory.backend.identity.infrastructure.adapter.out.persistence.repository;
+
+import com.code_factory.backend.identity.infrastructure.adapter.out.persistence.entity.UserEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface JpaUserRepository extends JpaRepository<UserEntity, UUID> {
+    Optional<UserEntity> findByEmail(String email);
+    boolean existsByEmail(String email);
+
+    @Query("SELECT u FROM UserEntity u WHERE " +
+           "(:email IS NULL OR LOWER(CAST(u.email AS string)) LIKE LOWER(CONCAT('%', CAST(:email AS string), '%'))) AND " +
+           "(:firstName IS NULL OR LOWER(CAST(u.firstName AS string)) LIKE LOWER(CONCAT('%', CAST(:firstName AS string), '%'))) AND " +
+           "(:lastName IS NULL OR LOWER(CAST(u.lastName AS string)) LIKE LOWER(CONCAT('%', CAST(:lastName AS string), '%')))")
+    List<UserEntity> findWithFilters(@Param("email") String email, @Param("firstName") String firstName, @Param("lastName") String lastName);
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/infrastructure/adapter/out/persistence/entity/UserEntity.java
+
+package com.code_factory.backend.identity.infrastructure.adapter.out.persistence.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.UUID;
+
+@Entity
+@Table(name = "users")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserEntity {
+
+    @Id
+    private UUID id;
+
+    @Column(nullable = false, length = 100)
+    private String firstName;
+
+    @Column(nullable = false, length = 100)
+    private String lastName;
+
+    @Column(unique = true, nullable = false, length = 150)
+    private String email;
+
+    @Column(nullable = false)
+    private String password;
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/infrastructure/adapter/out/security/BCryptPasswordEncoderAdapter.java
+
+package com.code_factory.backend.identity.infrastructure.adapter.out.security;
+
+import com.code_factory.backend.identity.application.port.out.PasswordEncoderPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class BCryptPasswordEncoderAdapter implements PasswordEncoderPort {
+
+    private final PasswordEncoder passwordEncoder;
+
+    @Override
+    public String encode(String rawPassword) {
+        return passwordEncoder.encode(rawPassword);
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/application/service/RegisterUserService.java
+
+package com.code_factory.backend.identity.application.service;
+
+import com.code_factory.backend.identity.application.port.in.RegisterUserUseCase;
+import com.code_factory.backend.identity.application.port.out.PasswordEncoderPort;
+import com.code_factory.backend.identity.application.port.out.UserRepositoryPort;
+import com.code_factory.backend.identity.domain.model.User;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class RegisterUserService implements RegisterUserUseCase {
+
+    private final UserRepositoryPort userRepositoryPort;
+    private final PasswordEncoderPort passwordEncoderPort;
+
+    @Override
+    public User register(User user) {
+        // Validar si el correo ya existe
+        if (userRepositoryPort.existsByEmail(user.getEmail())) {
+            // Por ahora lanzamos una excepción genérica, 
+            // luego crearemos nuestra excepción de dominio personalizada.
+            throw new RuntimeException("Email already in use: " + user.getEmail());
+        }
+
+        // Cifrar la contraseña antes de guardar
+        user.setPassword(passwordEncoderPort.encode(user.getPassword()));
+
+        return userRepositoryPort.save(user);
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/application/service/FindUserService.java
+
+package com.code_factory.backend.identity.application.service;
+
+import com.code_factory.backend.identity.application.port.in.FindUserUseCase;
+import com.code_factory.backend.identity.application.port.out.UserRepositoryPort;
+import com.code_factory.backend.identity.domain.model.User;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class FindUserService implements FindUserUseCase {
+
+    private final UserRepositoryPort userRepositoryPort;
+
+    @Override
+    public List<User> findUsers(String email, String firstName, String lastName) {
+        return userRepositoryPort.findAllFiltered(email, firstName, lastName);
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/application/port/in/FindUserUseCase.java
+
+package com.code_factory.backend.identity.application.port.in;
+
+import com.code_factory.backend.identity.domain.model.User;
+import java.util.List;
+
+public interface FindUserUseCase {
+    List<User> findUsers(String email, String firstName, String lastName);
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/application/port/in/RegisterUserUseCase.java
+
+package com.code_factory.backend.identity.application.port.in;
+
+import com.code_factory.backend.identity.domain.model.User;
+
+public interface RegisterUserUseCase {
+        User register(User user);
+} 
+
+
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/application/port/out/PasswordEncoderPort.java
+
+package com.code_factory.backend.identity.application.port.out;
+
+public interface PasswordEncoderPort {
+    String encode(String rawPassword);
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/application/port/out/UserRepositoryPort.java
+
+package com.code_factory.backend.identity.application.port.out;
+
+import com.code_factory.backend.identity.domain.model.User;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+
+public interface UserRepositoryPort {
+    User save(User user);
+    Optional<User> findById(UUID id);
+    Optional<User> findByEmail(String email);
+    boolean existsById(UUID id);
+    boolean existsByEmail(String email);
+    List<User> findAllFiltered(String email, String firstName, String lastName);
+    
+}
+
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/identity/domain/model/User.java
+
+package com.code_factory.backend.identity.domain.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.UUID;
+
+/**
+ * Entidad de Dominio: User
+ * Representa al usuario central del sistema PGLI (Plataforma de Gestión de Liquidez Individual)
+ */
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class User {
+
+    private UUID id; 
+    private String firstName;
+    private String lastName;
+    private String email; 
+    private String password;     
+    
+}
+
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/infrastructure/adapter/in/web/TransactionController.java
+
+package com.code_factory.backend.transaction.infrastructure.adapter.in.web;
+
+import com.code_factory.backend.classification.application.port.out.CategoryRepositoryPort;
+import com.code_factory.backend.classification.domain.model.CategoryType;
+import com.code_factory.backend.transaction.application.port.in.ListTransactionsUseCase;
+import com.code_factory.backend.transaction.application.port.in.RegisterIncomeCommand;
+import com.code_factory.backend.transaction.application.port.in.RegisterIncomeUseCase;
+import com.code_factory.backend.transaction.application.port.in.RegisterExpenseCommand;
+import com.code_factory.backend.transaction.application.port.in.RegisterExpenseUseCase;
+import com.code_factory.backend.transaction.domain.model.Transaction;
+import com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto.RegisterIncomeRequest;
+import com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto.RegisterExpenseRequest;
+import com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto.TransactionResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/transactions")
+@RequiredArgsConstructor
+public class TransactionController {
+
+    private final RegisterIncomeUseCase registerIncomeUseCase;
+    private final RegisterExpenseUseCase registerExpenseUseCase;
+    private final ListTransactionsUseCase listTransactionsUseCase;
+    private final CategoryRepositoryPort categoryRepositoryPort;
+
+    @PostMapping("/income")
+    public ResponseEntity<Transaction> registerIncome(@Valid @RequestBody RegisterIncomeRequest request) {
+        var command = new RegisterIncomeCommand(
+                request.getUserId(),
+                request.getCategoryId(),
+                request.getAmount(),
+                request.getDescription(),
+                request.getTransactionDate()
+        );
+        // CORREGIDO: Usando el nombre de variable correcto
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(registerIncomeUseCase.registerIncome(command));
+    }
+
+    @PostMapping("/expense")
+    public ResponseEntity<Transaction> registerExpense(@Valid @RequestBody RegisterExpenseRequest request) {
+        var command = new RegisterExpenseCommand(
+                request.getUserId(),
+                request.getCategoryId(),
+                request.getAmount(),
+                request.getDescription(),
+                request.getTransactionDate()
+        );
+        // CORREGIDO: Usando el nombre de variable correcto
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(registerExpenseUseCase.registerExpense(command));
+    }
+
+@GetMapping("/history/{userId}")
+    public ResponseEntity<List<TransactionResponse>> getHistory(
+            @PathVariable UUID userId,
+            @RequestParam(required = false) CategoryType type, // El filtro mágico
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+
+        List<TransactionResponse> history = listTransactionsUseCase.getHistoryByUserId(userId, type, limit, offset)
+                .stream()
+                .map(t -> {
+                    var category = categoryRepositoryPort.findById(t.getCategoryId()).orElse(null);
+                    return TransactionResponse.builder()
+                            .id(t.getId())
+                            .amount(t.getAmount())
+                            .description(t.getDescription())
+                            .transactionDate(t.getTransactionDate())
+                            .categoryId(t.getCategoryId())
+                            .categoryName(category != null ? category.getName() : "Desconocida")
+                            .categoryType(category != null ? category.getType() : null)
+                            .build();
+                })
+                .toList();
+
+        return ResponseEntity.ok(history);
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/infrastructure/adapter/in/web/dto/RegisterExpenseRequest.java
+
+package com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto;
+
+import jakarta.validation.constraints.*;
+import lombok.Data;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Data
+public class RegisterExpenseRequest {
+    @NotNull(message = "El monto es obligatorio")
+    @Positive(message = "El monto debe ser positivo")
+    private BigDecimal amount;
+    
+    private String description;
+    
+    @NotNull(message = "La fecha es obligatoria")
+    private LocalDate transactionDate;
+    
+    @NotNull(message = "El ID de usuario es obligatorio")
+    private UUID userId;
+    
+    @NotNull(message = "El ID de categoría es obligatorio")
+    private UUID categoryId;
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/infrastructure/adapter/in/web/dto/TransactionResponse.java
+
+package com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+
+import com.code_factory.backend.classification.domain.model.CategoryType;
+
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+public class TransactionResponse {
+    private UUID id;
+    private BigDecimal amount;
+    private String description;
+    private LocalDate transactionDate;
+    private UUID categoryId;
+    private String categoryName;
+    private CategoryType categoryType;
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/infrastructure/adapter/in/web/dto/RegisterIncomeRequest.java
+
+package com.code_factory.backend.transaction.infrastructure.adapter.in.web.dto;
+
+import jakarta.validation.constraints.*;
+import lombok.Data;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Data
+public class RegisterIncomeRequest {
+    @NotNull(message = "El monto es obligatorio")
+    @Positive(message = "El monto debe ser positivo")
+    private BigDecimal amount;
+
+    private String description;
+    
+    @NotNull(message = "La fecha es obligatoria")
+    private LocalDate transactionDate;
+    
+    @NotNull(message = "El ID de usuario es obligatorio")
+    private UUID userId;
+    
+    @NotNull(message = "El ID de categoría es obligatorio")
+    private UUID categoryId;
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/infrastructure/adapter/out/persistence/mapper/TransactionMapper.java
+
+package com.code_factory.backend.transaction.infrastructure.adapter.out.persistence.mapper;
+
+import com.code_factory.backend.transaction.domain.model.Transaction;
+import com.code_factory.backend.transaction.infrastructure.adapter.out.persistence.entity.TransactionEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+public class TransactionMapper {
+    public TransactionEntity toEntity(Transaction domain) {
+        return TransactionEntity.builder()
+                .id(domain.getId())
+                .userId(domain.getUserId())
+                .categoryId(domain.getCategoryId())
+                .amount(domain.getAmount())
+                .description(domain.getDescription())
+                .transactionDate(domain.getTransactionDate())
+                .build();
+    }
+
+    public Transaction toDomain(TransactionEntity entity) {
+        return Transaction.builder()
+                .id(entity.getId())
+                .userId(entity.getUserId())
+                .categoryId(entity.getCategoryId())
+                .amount(entity.getAmount())
+                .description(entity.getDescription())
+                .transactionDate(entity.getTransactionDate())
+                .build();
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/infrastructure/adapter/out/persistence/adapter/TransactionPersistenceAdapter.java
+
+package com.code_factory.backend.transaction.infrastructure.adapter.out.persistence.adapter;
+
+import com.code_factory.backend.classification.domain.model.CategoryType;
+import com.code_factory.backend.transaction.application.port.out.TransactionRepositoryPort;
+import com.code_factory.backend.transaction.domain.model.Transaction;
+import com.code_factory.backend.transaction.infrastructure.adapter.out.persistence.mapper.TransactionMapper;
+import com.code_factory.backend.transaction.infrastructure.adapter.out.persistence.repository.JpaTransactionRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Component;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Component
+@RequiredArgsConstructor
+public class TransactionPersistenceAdapter implements TransactionRepositoryPort {
+    private final JpaTransactionRepository repository;
+    private final TransactionMapper mapper;
+
+    @Override
+    public Transaction save(Transaction transaction) {
+        return mapper.toDomain(repository.save(mapper.toEntity(transaction)));
+    }
+
+    @Override
+    public Optional<Transaction> findById(UUID id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<Transaction> findByUserIdAndType(UUID userId, CategoryType type, int limit, int offset) {
+        var pageable = PageRequest.of(offset / limit, limit);
+        return repository.findByUserIdAndType(userId, type, pageable)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/infrastructure/adapter/out/persistence/repository/JpaTransactionRepository.java
+
+package com.code_factory.backend.transaction.infrastructure.adapter.out.persistence.repository;
+
+import com.code_factory.backend.classification.domain.model.CategoryType;
+import com.code_factory.backend.transaction.infrastructure.adapter.out.persistence.entity.TransactionEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import java.util.UUID;
+
+public interface JpaTransactionRepository extends JpaRepository<TransactionEntity, UUID> {
+    
+    @Query("SELECT t FROM TransactionEntity t " +
+           "JOIN CategoryEntity c ON t.categoryId = c.id " +
+           "WHERE t.userId = :userId " +
+           "AND (:type IS NULL OR c.type = :type) " +
+           "ORDER BY t.transactionDate DESC")
+    Page<TransactionEntity> findByUserIdAndType(
+            @Param("userId") UUID userId, 
+            @Param("type") CategoryType type, 
+            Pageable pageable
+    );
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/infrastructure/adapter/out/persistence/entity/TransactionEntity.java
+
+package com.code_factory.backend.transaction.infrastructure.adapter.out.persistence.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = "transactions")
+@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+public class TransactionEntity {
+    @Id
+    private UUID id;
+    private UUID userId;
+    private UUID categoryId;
+    private BigDecimal amount;
+    private String description;
+    private LocalDate transactionDate;
+
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/application/service/RegisterIncomeService.java
+
+package com.code_factory.backend.transaction.application.service;
+
+import com.code_factory.backend.classification.application.port.out.CategoryRepositoryPort;
+import com.code_factory.backend.classification.domain.model.CategoryType;
+import com.code_factory.backend.identity.application.port.out.UserRepositoryPort;
+import com.code_factory.backend.transaction.application.port.in.RegisterIncomeCommand;
+import com.code_factory.backend.transaction.application.port.in.RegisterIncomeUseCase;
+import com.code_factory.backend.transaction.application.port.out.TransactionRepositoryPort;
+import com.code_factory.backend.transaction.domain.model.Transaction;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class RegisterIncomeService implements RegisterIncomeUseCase {
+
+    private final TransactionRepositoryPort transactionRepositoryPort;
+    private final UserRepositoryPort userRepositoryPort;
+    private final CategoryRepositoryPort categoryRepositoryPort;
+
+    @Override
+    public Transaction registerIncome(RegisterIncomeCommand command) {
+        // 1. Validar existencia del usuario
+        userRepositoryPort.findById(command.userId())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // 2. Validar existencia y TIPO de categoría (HU 2.1.2)
+        var category = categoryRepositoryPort.findById(command.categoryId())
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+
+        if (category.getType() != CategoryType.INCOME) {
+            throw new RuntimeException("La categoría debe ser de tipo INGRESO");
+        }
+
+        // 3. Mapear Command a Dominio (Asignando ID de negocio)
+        Transaction transaction = Transaction.builder()
+                .id(UUID.randomUUID())
+                .userId(command.userId())
+                .categoryId(command.categoryId())
+                .amount(command.amount())
+                .description(command.description())
+                .transactionDate(command.transactionDate())
+                .build();
+
+        return transactionRepositoryPort.save(transaction);
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/application/service/RegisterExpenseService.java
+
+package com.code_factory.backend.transaction.application.service;
+
+import com.code_factory.backend.classification.application.port.out.CategoryRepositoryPort;
+import com.code_factory.backend.classification.domain.model.CategoryType;
+import com.code_factory.backend.identity.application.port.out.UserRepositoryPort;
+import com.code_factory.backend.transaction.application.port.in.RegisterExpenseCommand;
+import com.code_factory.backend.transaction.application.port.in.RegisterExpenseUseCase;
+import com.code_factory.backend.transaction.application.port.out.TransactionRepositoryPort;
+import com.code_factory.backend.transaction.domain.model.Transaction;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class RegisterExpenseService implements RegisterExpenseUseCase {
+
+    private final TransactionRepositoryPort transactionRepositoryPort;
+    private final UserRepositoryPort userRepositoryPort;
+    private final CategoryRepositoryPort categoryRepositoryPort;
+
+    @Override
+    public Transaction registerExpense(RegisterExpenseCommand command) {
+        // 1. Validar Usuario
+        userRepositoryPort.findById(command.userId())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // 2. Validar Categoría y Tipo (Debe ser GASTO)
+        var category = categoryRepositoryPort.findById(command.categoryId())
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+
+        if (category.getType() != CategoryType.EXPENSE) {
+            throw new RuntimeException("La categoría seleccionada debe ser de tipo GASTO");
+        }
+
+        // 3. Crear Objeto de Dominio
+        Transaction transaction = Transaction.builder()
+                .id(UUID.randomUUID())
+                .userId(command.userId())
+                .categoryId(command.categoryId())
+                .amount(command.amount())
+                .description(command.description())
+                .transactionDate(command.transactionDate())
+                .build();
+
+        return transactionRepositoryPort.save(transaction);
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/application/service/ListTransactionsService.java
+
+package com.code_factory.backend.transaction.application.service;
+
+import com.code_factory.backend.classification.domain.model.CategoryType;
+import com.code_factory.backend.transaction.application.port.in.ListTransactionsUseCase;
+import com.code_factory.backend.transaction.application.port.out.TransactionRepositoryPort;
+import com.code_factory.backend.transaction.domain.model.Transaction;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class ListTransactionsService implements ListTransactionsUseCase {
+    private final TransactionRepositoryPort transactionRepositoryPort;
+
+    @Override
+    public List<Transaction> getHistoryByUserId(UUID userId, CategoryType type, int limit, int offset) {
+        return transactionRepositoryPort.findByUserIdAndType(userId, type, limit, offset);
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/application/port/in/RegisterIncomeUseCase.java
+
+package com.code_factory.backend.transaction.application.port.in;
+
+import com.code_factory.backend.transaction.domain.model.Transaction;
+
+public interface RegisterIncomeUseCase {
+    Transaction registerIncome(RegisterIncomeCommand command);
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/application/port/in/RegisterExpenseUseCase.java
+
+package com.code_factory.backend.transaction.application.port.in;
+
+import com.code_factory.backend.transaction.domain.model.Transaction;
+
+public interface RegisterExpenseUseCase {
+    Transaction registerExpense(RegisterExpenseCommand command);
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/application/port/in/RegisterExpenseCommand.java
+
+package com.code_factory.backend.transaction.application.port.in;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+
+public record RegisterExpenseCommand(
+    UUID userId,
+    UUID categoryId,
+    BigDecimal amount,
+    String description,
+    LocalDate transactionDate
+
+) {}
+
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/application/port/in/RegisterIncomeCommand.java
+
+package com.code_factory.backend.transaction.application.port.in;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+
+public record RegisterIncomeCommand(
+    UUID userId,
+    UUID categoryId,
+    BigDecimal amount,
+    String description,
+    LocalDate transactionDate
+) {}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/application/port/in/ListTransactionsUseCase.java
+
+package com.code_factory.backend.transaction.application.port.in;
+
+import com.code_factory.backend.classification.domain.model.CategoryType;
+import com.code_factory.backend.transaction.domain.model.Transaction;
+import java.util.List;
+import java.util.UUID;
+
+public interface ListTransactionsUseCase {
+    List<Transaction> getHistoryByUserId(UUID userId, CategoryType type, int limit, int offset);
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/application/port/out/TransactionRepositoryPort.java
+
+package com.code_factory.backend.transaction.application.port.out;
+
+import com.code_factory.backend.classification.domain.model.CategoryType;
+import com.code_factory.backend.transaction.domain.model.Transaction;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface TransactionRepositoryPort {
+    
+    // Para la HU 2.1.2: Registrar Ingreso
+    Transaction save(Transaction transaction);
+
+    // Para futuras consultas (Paginación agnóstica)
+    // Usamos tipos simples de Java
+    List<Transaction> findByUserIdAndType(UUID userId, CategoryType type, int limit, int offset);
+    
+    Optional<Transaction> findById(UUID id);
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/transaction/domain/model/Transaction.java
+
+package com.code_factory.backend.transaction.domain.model;
+
+import lombok.Builder;
+import lombok.Getter;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Getter
+@Builder
+public class Transaction {
+    private final UUID id;
+    private final UUID userId;
+    private final UUID categoryId;
+    private final BigDecimal amount;
+    private final String description;
+    private final LocalDate transactionDate;
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/shared/exception/GlobalExceptionHandler.java
+
+package com.code_factory.backend.shared.exception;
+
+import com.code_factory.backend.shared.dto.ErrorResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Maneja errores de validación (@Valid) - Escenarios 2, 5, 6, 7 y 8
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .message("Error de validación en los campos enviados")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .timestamp(LocalDateTime.now())
+                .errors(errors)
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    // Maneja excepciones de negocio (como el RuntimeException del Email) - Escenario 3
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .message(ex.getMessage())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/shared/dto/ErrorResponse.java
+
+package com.code_factory.backend.shared.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.Map;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ErrorResponse {
+    private String message;
+    private int status;
+    private LocalDateTime timestamp;
+    private Map<String, String> errors; // Aquí irán los campos específicos (ej: "email": "formato inválido")
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/shared/config/SecurityConfig.java
+
+package com.code_factory.backend.shared.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable()) // Deshabilitamos CSRF para pruebas de API
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().permitAll() // Permitimos todo temporalmente
+            );
+        return http.build();
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/shared/config/OpenApiConfig.java
+
+package com.code_factory.backend.shared.config;
+
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class OpenApiConfig {
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("PGLI API - Personal Cash-Flow Guard")
+                        .version("1.0")
+                        .description("Documentación de la API para la gestión de liquidez individual"));
+    }
+}
+
+
+/home/alejo/Documents/Semestre_2026_1/code-factory-2026/backend/src/main/java/com/code_factory/backend/shared/config/CorsConfig.java
+
+package com.code_factory.backend.shared.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class CorsConfig {
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/api/v1/**")
+                        .allowedOrigins("http://localhost:3000", "http://localhost:5173") //configuración para permitir solicitudes desde el frontend
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
+            }
+        };
+    }
+}
+
+
