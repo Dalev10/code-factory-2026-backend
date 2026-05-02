@@ -24,3 +24,5 @@ public interface BudgetRepositoryPort {
      */
     Optional<Budget> findByUserIdAndMonth(UUID userId, LocalDate month);
 }
+    Optional<Budget> findById(UUID id);
+}
