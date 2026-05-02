@@ -36,4 +36,9 @@ public class TransactionPersistenceAdapter implements TransactionRepositoryPort 
                 .map(mapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public void delete(UUID id) {
+        repository.deleteById(id);
+    }
 }

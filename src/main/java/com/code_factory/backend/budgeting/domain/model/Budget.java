@@ -1,4 +1,4 @@
-package com.code_factory.backend.transaction.domain.model;
+package com.code_factory.backend.budgeting.domain.model;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -9,12 +9,11 @@ import java.util.UUID;
 
 @Getter
 @Builder
-public class Transaction {
+public class Budget {
     private final UUID id;
     private final UUID userId;
-    private final UUID categoryId;
-    private final BigDecimal amount;
-    private final String description;
-    private final LocalDate transactionDate;
+    private final LocalDate month;
+    private final BigDecimal totalIncome;
+    private final BigDecimal expenseLimit;
     private final LocalDateTime createdAt;
 }

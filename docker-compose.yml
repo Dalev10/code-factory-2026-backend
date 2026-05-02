@@ -5,11 +5,11 @@ services:
     container_name: pgli_db
     restart: always
     environment:
-      POSTGRES_USER: pgli_admin
-      POSTGRES_PASSWORD: pgli_password
-      POSTGRES_DB: pgli_local
+      - POSTGRES_USER=pgli_admin
+      - POSTGRES_PASSWORD=pgli_password
+      - POSTGRES_DB=pgli_local
     ports:
-      - "5433:5432"
+      - "5433:5432" # Puerto 5433 para acceso externo (DBeaver/pgAdmin)
     volumes:
       - pg_data:/var/lib/postgresql/data
     networks:
@@ -22,6 +22,12 @@ services:
     restart: on-failure
     ports:
       - "8080:8080"
+    environment:
+      # Inyección de variables para resolver ${SPRING_DATASOURCE_URL} y demás
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/pgli_local
+      - SPRING_DATASOURCE_USERNAME=pgli_admin
+      - SPRING_DATASOURCE_PASSWORD=pgli_password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     depends_on:
       - db
     networks:
