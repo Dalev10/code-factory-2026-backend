@@ -13,7 +13,8 @@ import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.Budg
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.BudgetSummaryResponse;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.CategoryProgressResponse;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.CreateBudgetRequest;
-import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.UpdateBudgetRequest;
+import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.UpdateExpenseLimitRequest;
+import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.UpdateIncomeRequest;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
