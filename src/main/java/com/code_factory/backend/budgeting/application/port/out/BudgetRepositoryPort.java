@@ -23,6 +23,6 @@ public interface BudgetRepositoryPort {
      * Obtiene el presupuesto de un usuario en un mes específico
      */
     Optional<Budget> findByUserIdAndMonth(UUID userId, LocalDate month);
-}
+
     Optional<Budget> findById(UUID id);
 }

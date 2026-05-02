@@ -132,6 +132,9 @@ public class TransactionController {
                 updateTransactionCategoryUseCase.execute(command);
 
         return ResponseEntity.ok(updatedTransaction);
+        }
+
+        
     @DeleteMapping("/{transactionId}")
     public ResponseEntity<Void> deleteTransaction(
             @PathVariable UUID transactionId,
