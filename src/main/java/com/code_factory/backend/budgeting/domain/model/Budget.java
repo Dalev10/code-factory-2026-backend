@@ -38,4 +38,24 @@ public class Budget {
                 .createdAt(this.createdAt)
                 .build();
     }
+
+    /**
+     * Actualiza los ingresos del presupuesto mensual
+     * Mantiene la inmutabilidad del objeto
+     */
+    public Budget updateIncome(BigDecimal newIncome) {
+
+        if (newIncome == null || newIncome.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El valor debe ser mayor a 0");
+        }
+
+        return Budget.builder()
+                .id(this.id)
+                .userId(this.userId)
+                .month(this.month)
+                .totalIncome(newIncome)
+                .expenseLimit(this.expenseLimit)
+                .createdAt(this.createdAt)
+                .build();
+    }
 }
