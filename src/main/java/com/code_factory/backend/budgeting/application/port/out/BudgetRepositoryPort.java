@@ -9,20 +9,15 @@ import java.util.UUID;
 
 public interface BudgetRepositoryPort {
 
-    /**
-     * Guarda o actualiza un presupuesto
-     */
     Budget save(Budget budget);
 
-    /**
-     * Obtiene todos los presupuestos de un usuario
-     */
     List<Budget> findByUserId(UUID userId);
 
-    /**
-     * Obtiene el presupuesto de un usuario en un mes específico
-     */
     Optional<Budget> findByUserIdAndMonth(UUID userId, LocalDate month);
 
     Optional<Budget> findById(UUID id);
+
+    boolean existsByUserId(UUID userId);
+
+    void deleteByUserId(UUID userId);
 }

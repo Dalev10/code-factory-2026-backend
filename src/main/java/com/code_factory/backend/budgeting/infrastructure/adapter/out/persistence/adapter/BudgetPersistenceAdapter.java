@@ -33,11 +33,23 @@ public class BudgetPersistenceAdapter implements BudgetRepositoryPort {
 
     @Override
     public Optional<Budget> findByUserIdAndMonth(UUID userId, LocalDate month) {
-        return repository.findByUserIdAndMonth(userId, month).map(mapper::toDomain);
+        return repository.findByUserIdAndMonth(userId, month)
+                .map(mapper::toDomain);
     }
 
     @Override
     public Optional<Budget> findById(UUID id) {
-        return repository.findById(id).map(mapper::toDomain);
+        return repository.findById(id)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public boolean existsByUserId(UUID userId) {
+        return repository.existsByUserId(userId);
+    }
+
+    @Override
+    public void deleteByUserId(UUID userId) {
+        repository.deleteByUserId(userId);
     }
 }
