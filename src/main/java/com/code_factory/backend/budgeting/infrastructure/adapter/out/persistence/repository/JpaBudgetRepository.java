@@ -14,7 +14,6 @@ public interface JpaBudgetRepository extends JpaRepository<BudgetEntity, UUID> {
 
     Optional<BudgetEntity> findByUserIdAndMonth(UUID userId, LocalDate month);
 
-    boolean existsByUserId(UUID userId);
 
-    void deleteByUserId(UUID userId);
+    void deleteById(UUID id);
 }

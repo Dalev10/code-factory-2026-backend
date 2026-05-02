@@ -17,7 +17,6 @@ public interface BudgetRepositoryPort {
 
     Optional<Budget> findById(UUID id);
 
-    boolean existsByUserId(UUID userId);
 
-    void deleteByUserId(UUID userId);
+    void deleteById(UUID id);
 }

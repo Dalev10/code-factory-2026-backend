@@ -161,7 +161,9 @@ public class BudgetController {
 
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteBudget(@PathVariable UUID id) {
+    public ResponseEntity<String> deleteBudget(
+        @PathVariable UUID id, 
+        @RequestParam UUID userId) {
 
         boolean deleted = deleteBudgetUseCase.deleteById(id);
 
