@@ -43,13 +43,10 @@ public class BudgetPersistenceAdapter implements BudgetRepositoryPort {
                 .map(mapper::toDomain);
     }
 
-    @Override
-    public boolean existsByUserId(UUID userId) {
-        return repository.existsByUserId(userId);
-    }
+
 
     @Override
-    public void deleteByUserId(UUID userId) {
-        repository.deleteByUserId(userId);
+    public void deleteById(UUID id) {
+        repository.deleteById(id);
     }
 }

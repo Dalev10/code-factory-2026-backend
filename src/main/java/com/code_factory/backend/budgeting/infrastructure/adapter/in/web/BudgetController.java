@@ -2,6 +2,8 @@ package com.code_factory.backend.budgeting.infrastructure.adapter.in.web;
 
 import com.code_factory.backend.budgeting.application.port.in.CreateBudgetCommand;
 import com.code_factory.backend.budgeting.application.port.in.CreateBudgetUseCase;
+import com.code_factory.backend.budgeting.application.port.in.DeleteBudgetCommand;
+import com.code_factory.backend.budgeting.application.port.in.DeleteBudgetUseCase;
 import com.code_factory.backend.budgeting.application.port.in.GetBudgetProgressUseCase;
 import com.code_factory.backend.budgeting.application.port.in.GetBudgetSummaryUseCase;
 import com.code_factory.backend.budgeting.application.port.in.ListBudgetsUseCase;
@@ -35,6 +37,7 @@ public class BudgetController {
     private final UpdateBudgetUseCase updateBudgetUseCase; 
     private final GetBudgetSummaryUseCase getBudgetSummaryUseCase;
     private final GetBudgetProgressUseCase getBudgetProgressUseCase;
+    private final DeleteBudgetUseCase deleteBudgetUseCase;
 
     @PostMapping
     public ResponseEntity<BudgetResponse> createBudget(@Valid @RequestBody CreateBudgetRequest request) {
@@ -156,4 +159,16 @@ public class BudgetController {
 
         return ResponseEntity.ok(response);
     }
+
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteBudget(
+        @PathVariable UUID id, 
+        @RequestParam UUID userId) {
+
+        deleteBudgetUseCase.deleteBudget(new DeleteBudgetCommand(id, userId));
+        return ResponseEntity
+                .ok("Presupuesto eliminado correctamente");
+    }
+
 }
