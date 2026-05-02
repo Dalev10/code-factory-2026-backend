@@ -81,25 +81,27 @@ public class BudgetController {
     }
 
     //  NUEVO MÉTODO (editar presupuesto)
-    @PutMapping("/monthly")
-    public ResponseEntity<?> updateBudget(@RequestBody @Valid UpdateBudgetRequest request) {
+    @PutMapping("/expense-limit")
+public ResponseEntity<?> updateExpenseLimit(
+        @RequestBody @Valid UpdateExpenseLimitRequest request
+) {
 
-        try {
-            updateBudgetUseCase.updateExpenseLimit(
-                    request.getUserId(),
-                    request.getNewLimit()
-            );
+    try {
+        updateBudgetUseCase.updateExpenseLimit(
+                request.getUserId(),
+                request.getNewLimit()
+        );
 
-            return ResponseEntity.ok("Presupuesto actualizado correctamente");
+        return ResponseEntity.ok("Presupuesto actualizado correctamente");
 
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
 
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("No se pudo completar la acción");
-        }
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("No se pudo completar la acción");
     }
+}
 
 
     @GetMapping("/{userId}/summary")
