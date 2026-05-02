@@ -2,11 +2,14 @@ package com.code_factory.backend.budgeting.infrastructure.adapter.in.web;
 
 import com.code_factory.backend.budgeting.application.port.in.CreateBudgetCommand;
 import com.code_factory.backend.budgeting.application.port.in.CreateBudgetUseCase;
+import com.code_factory.backend.budgeting.application.port.in.GetBudgetProgressUseCase;
 import com.code_factory.backend.budgeting.application.port.in.GetBudgetSummaryUseCase;
 import com.code_factory.backend.budgeting.application.port.in.ListBudgetsUseCase;
 import com.code_factory.backend.budgeting.application.port.in.UpdateBudgetUseCase;
+import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.BudgetProgressResponse;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.BudgetResponse;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.BudgetSummaryResponse;
+import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.CategoryProgressResponse;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.CreateBudgetRequest;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.UpdateBudgetRequest;
 
@@ -31,6 +34,7 @@ public class BudgetController {
     private final ListBudgetsUseCase listBudgetsUseCase;
     private final UpdateBudgetUseCase updateBudgetUseCase; 
     private final GetBudgetSummaryUseCase getBudgetSummaryUseCase;
+    private final GetBudgetProgressUseCase getBudgetProgressUseCase;
 
     @PostMapping
     public ResponseEntity<BudgetResponse> createBudget(@Valid @RequestBody CreateBudgetRequest request) {
@@ -109,6 +113,45 @@ public class BudgetController {
                 .totalSpent(summary.totalSpent())
                 .remainingBalance(summary.remainingBalance())
                 .isExceeded(summary.isExceeded())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{userId}/progress")
+    public ResponseEntity<BudgetProgressResponse> getBudgetProgress(
+            @PathVariable UUID userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate month) {
+
+        // 1. Ejecutar el caso de uso
+        var progressReport = getBudgetProgressUseCase.getProgress(userId, month);
+
+        // 2. Mapear el resumen global
+        var globalSummaryResponse = BudgetSummaryResponse.builder()
+                .budgetId(progressReport.globalSummary().budgetId())
+                .totalIncome(progressReport.globalSummary().totalIncome())
+                .expenseLimit(progressReport.globalSummary().expenseLimit())
+                .totalSpent(progressReport.globalSummary().totalSpent())
+                .remainingBalance(progressReport.globalSummary().remainingBalance())
+                .isExceeded(progressReport.globalSummary().isExceeded())
+                .build();
+
+        // 3. Mapear el detalle por categorías
+        var categoryDetailsResponse = progressReport.categoryDetails().stream()
+                .map(detail -> CategoryProgressResponse.builder()
+                        .categoryId(detail.categoryId())
+                        .categoryName(detail.categoryName())
+                        .allocatedAmount(detail.allocatedAmount())
+                        .spentAmount(detail.spentAmount())
+                        .remainingAmount(detail.remainingAmount())
+                        .progressPercentage(detail.progressPercentage())
+                        .build())
+                .toList();
+
+        // 4. Construir la respuesta final unificada
+        var response = BudgetProgressResponse.builder()
+                .globalSummary(globalSummaryResponse)
+                .categoryDetails(categoryDetailsResponse)
                 .build();
 
         return ResponseEntity.ok(response);
