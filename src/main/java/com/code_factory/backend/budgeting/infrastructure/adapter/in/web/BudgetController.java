@@ -3,6 +3,7 @@ package com.code_factory.backend.budgeting.infrastructure.adapter.in.web;
 import com.code_factory.backend.budgeting.application.port.in.CreateBudgetCommand;
 import com.code_factory.backend.budgeting.application.port.in.CreateBudgetUseCase;
 import com.code_factory.backend.budgeting.application.port.in.ListBudgetsUseCase;
+import com.code_factory.backend.budgeting.application.service.DeleteBudgetService;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.BudgetResponse;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.CreateBudgetRequest;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,6 +23,7 @@ public class BudgetController {
 
     private final CreateBudgetUseCase createBudgetUseCase;
     private final ListBudgetsUseCase listBudgetsUseCase;
+    private final DeleteBudgetService deleteBudgetService;
 
     @PostMapping
     public ResponseEntity<BudgetResponse> createBudget(@Valid @RequestBody CreateBudgetRequest request) {
@@ -30,7 +33,9 @@ public class BudgetController {
                 request.getTotalIncome(),
                 request.getExpenseLimit()
         );
+
         var budget = createBudgetUseCase.createBudget(command);
+
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(BudgetResponse.builder()
                         .id(budget.getId())
@@ -55,6 +60,17 @@ public class BudgetController {
                         .createdAt(b.getCreatedAt())
                         .build())
                 .toList();
+
         return ResponseEntity.ok(budgets);
+    }
+
+    @DeleteMapping
+    public ResponseEntity<?> deleteBudget(
+            @RequestParam UUID userId,
+            @RequestParam String month) {
+
+        deleteBudgetService.deleteBudget(userId, LocalDate.parse(month));
+
+        return ResponseEntity.ok("Presupuesto eliminado correctamente");
     }
 }

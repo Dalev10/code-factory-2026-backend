@@ -10,4 +10,6 @@ public interface BudgetRepositoryPort {
     Budget save(Budget budget);
     List<Budget> findByUserId(UUID userId);
     Optional<Budget> findByUserIdAndMonth(UUID userId, LocalDate month);
+
+    void delete(Budget budget); // 👈 ESTE ES NUEVO
 }
