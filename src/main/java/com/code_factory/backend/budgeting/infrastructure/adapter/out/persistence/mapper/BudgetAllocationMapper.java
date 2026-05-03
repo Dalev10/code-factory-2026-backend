@@ -15,6 +15,7 @@ public class BudgetAllocationMapper {
                 .budgetId(domain.getBudgetId())
                 .categoryId(domain.getCategoryId())
                 .amount(domain.getAmount())
+                .createdAt(domain.getCreatedAt())
                 .build();
     }
 

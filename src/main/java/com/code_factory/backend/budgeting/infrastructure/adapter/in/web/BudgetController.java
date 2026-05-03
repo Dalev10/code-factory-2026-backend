@@ -8,12 +8,17 @@ import com.code_factory.backend.budgeting.application.port.in.GetBudgetProgressU
 import com.code_factory.backend.budgeting.application.port.in.GetBudgetSummaryUseCase;
 import com.code_factory.backend.budgeting.application.port.in.ListBudgetsUseCase;
 import com.code_factory.backend.budgeting.application.port.in.UpdateBudgetUseCase;
+import com.code_factory.backend.budgeting.application.port.in.UpdateBudgetCommand;
+import com.code_factory.backend.budgeting.domain.model.Budget;
+import com.code_factory.backend.budgeting.domain.model.BudgetSummary;
+import com.code_factory.backend.budgeting.domain.model.BudgetProgressReport;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.BudgetProgressResponse;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.BudgetResponse;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.BudgetSummaryResponse;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.CategoryProgressResponse;
 import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.CreateBudgetRequest;
-import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.UpdateExpenseLimitRequest;
+import com.code_factory.backend.budgeting.infrastructure.adapter.in.web.dto.UpdateBudgetRequest;
+
 
 
 import jakarta.validation.Valid;
@@ -43,14 +48,14 @@ public class BudgetController {
     @PostMapping
     public ResponseEntity<BudgetResponse> createBudget(@Valid @RequestBody CreateBudgetRequest request) {
 
-        var command = new CreateBudgetCommand(
+        CreateBudgetCommand command = new CreateBudgetCommand(
                 request.getUserId(),
                 request.getMonth(),
                 request.getTotalIncome(),
                 request.getExpenseLimit()
         );
 
-        var budget = createBudgetUseCase.createBudget(command);
+        Budget budget = createBudgetUseCase.createBudget(command);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(BudgetResponse.builder()
@@ -81,28 +86,33 @@ public class BudgetController {
         return ResponseEntity.ok(budgets);
     }
 
-    //  NUEVO MÉTODO (editar presupuesto)
-    @PutMapping("/expense-limit")
-public ResponseEntity<?> updateExpenseLimit(
-        @RequestBody @Valid UpdateExpenseLimitRequest request
-) {
+  
+    @PutMapping("/{budgetId}")
+    public ResponseEntity<BudgetResponse> updateBudget(
+            @PathVariable UUID budgetId,
+            @RequestParam UUID userId, 
+            @Valid @RequestBody UpdateBudgetRequest request) { 
 
-    try {
-        updateBudgetUseCase.updateExpenseLimit(
-                request.getUserId(),
+        UpdateBudgetCommand command = new UpdateBudgetCommand(
+                userId,
+                budgetId,
+                request.getNewTotalIncome(),
                 request.getNewLimit()
         );
 
-        return ResponseEntity.ok("Presupuesto actualizado correctamente");
+        Budget updatedBudget = updateBudgetUseCase.updateBudget(command);
 
-    } catch (IllegalArgumentException e) {
-        return ResponseEntity.badRequest().body(e.getMessage());
-
-    } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("No se pudo completar la acción");
+        BudgetResponse response = BudgetResponse.builder()
+                .id(updatedBudget.getId())
+                .userId(updatedBudget.getUserId())
+                .month(updatedBudget.getMonth())
+                .totalIncome(updatedBudget.getTotalIncome())
+                .expenseLimit(updatedBudget.getExpenseLimit())
+                .createdAt(updatedBudget.getCreatedAt())
+                .build();
+        
+        return ResponseEntity.ok(response);
     }
-}
 
 
     @GetMapping("/{userId}/summary")
@@ -110,9 +120,9 @@ public ResponseEntity<?> updateExpenseLimit(
             @PathVariable UUID userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate month) {
 
-        var summary = getBudgetSummaryUseCase.getSummary(userId, month);
+        BudgetSummary summary = getBudgetSummaryUseCase.getSummary(userId, month);
 
-        var response = BudgetSummaryResponse.builder()
+        BudgetSummaryResponse response = BudgetSummaryResponse.builder()
                 .budgetId(summary.budgetId())
                 .totalIncome(summary.totalIncome())
                 .expenseLimit(summary.expenseLimit())
@@ -130,10 +140,10 @@ public ResponseEntity<?> updateExpenseLimit(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate month) {
 
         // 1. Ejecutar el caso de uso
-        var progressReport = getBudgetProgressUseCase.getProgress(userId, month);
+        BudgetProgressReport progressReport = getBudgetProgressUseCase.getProgress(userId, month);
 
         // 2. Mapear el resumen global
-        var globalSummaryResponse = BudgetSummaryResponse.builder()
+        BudgetSummaryResponse globalSummaryResponse = BudgetSummaryResponse.builder()
                 .budgetId(progressReport.globalSummary().budgetId())
                 .totalIncome(progressReport.globalSummary().totalIncome())
                 .expenseLimit(progressReport.globalSummary().expenseLimit())
@@ -143,7 +153,7 @@ public ResponseEntity<?> updateExpenseLimit(
                 .build();
 
         // 3. Mapear el detalle por categorías
-        var categoryDetailsResponse = progressReport.categoryDetails().stream()
+        List<CategoryProgressResponse> categoryDetailsResponse = progressReport.categoryDetails().stream()
                 .map(detail -> CategoryProgressResponse.builder()
                         .categoryId(detail.categoryId())
                         .categoryName(detail.categoryName())
@@ -155,7 +165,7 @@ public ResponseEntity<?> updateExpenseLimit(
                 .toList();
 
         // 4. Construir la respuesta final unificada
-        var response = BudgetProgressResponse.builder()
+        BudgetProgressResponse response = BudgetProgressResponse.builder()
                 .globalSummary(globalSummaryResponse)
                 .categoryDetails(categoryDetailsResponse)
                 .build();

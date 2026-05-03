@@ -14,6 +14,7 @@ public class BudgetMapper {
                 .month(domain.getMonth())
                 .totalIncome(domain.getTotalIncome())
                 .expenseLimit(domain.getExpenseLimit())
+                .createdAt(domain.getCreatedAt())
                 .build();
     }
 
