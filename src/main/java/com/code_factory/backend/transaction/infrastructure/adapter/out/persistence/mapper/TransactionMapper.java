@@ -25,6 +25,7 @@ public class TransactionMapper {
                 .amount(entity.getAmount())
                 .description(entity.getDescription())
                 .transactionDate(entity.getTransactionDate())
+                .createdAt(entity.getCreatedAt())
                 .build();
     }
 }

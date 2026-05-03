@@ -16,4 +16,6 @@ public interface TransactionRepositoryPort {
     List<Transaction> findByUserIdAndType(UUID userId, CategoryType type, int limit, int offset);
     
     Optional<Transaction> findById(UUID id);
+
+    void delete(UUID id);
 }
