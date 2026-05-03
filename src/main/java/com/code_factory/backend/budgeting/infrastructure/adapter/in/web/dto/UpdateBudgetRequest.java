@@ -5,15 +5,15 @@ import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Getter
 public class UpdateBudgetRequest {
 
-    @NotNull
-    private UUID userId;
+    @NotNull(message = "El nuevo ingreso total es obligatorio")
+    @Positive(message = "El ingreso total debe ser mayor a cero")
+    private BigDecimal newTotalIncome;
 
-    @NotNull
-    @Positive(message = "El valor debe ser mayor a 0")
+    @NotNull(message = "El nuevo límite de gastos es obligatorio")
+    @Positive(message = "El valor debe ser mayor a cero")
     private BigDecimal newLimit;
 }

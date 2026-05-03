@@ -19,23 +19,4 @@ public class Budget {
     private final BigDecimal expenseLimit;
     private final LocalDateTime createdAt;
 
-    /**
-     * Actualiza el límite de gasto (presupuesto mensual)
-     * Mantiene la inmutabilidad del objeto
-     */
-    public Budget updateExpenseLimit(BigDecimal newLimit) {
-
-        if (newLimit == null || newLimit.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("El valor debe ser mayor a 0");
-        }
-
-        return Budget.builder()
-                .id(this.id)
-                .userId(this.userId)
-                .month(this.month)
-                .totalIncome(this.totalIncome)
-                .expenseLimit(newLimit)
-                .createdAt(this.createdAt)
-                .build();
-    }
 }
