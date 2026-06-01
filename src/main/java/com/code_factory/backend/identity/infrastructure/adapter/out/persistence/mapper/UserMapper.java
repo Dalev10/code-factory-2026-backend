@@ -16,6 +16,8 @@ public class UserMapper {
                 .lastName(domain.getLastName())
                 .email(domain.getEmail())
                 .password(domain.getPassword())
+                .failedAttempts(domain.getFailedAttempts())
+                .blockedUntil(domain.getBlockedUntil())
                 .build();
     }
 
@@ -28,6 +30,8 @@ public class UserMapper {
                 .lastName(entity.getLastName())
                 .email(entity.getEmail())
                 .password(entity.getPassword())
+                .failedAttempts(entity.getFailedAttempts())
+                .blockedUntil(entity.getBlockedUntil())
                 .build();
     }
 }

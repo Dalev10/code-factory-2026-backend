@@ -28,6 +28,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=pgli_admin
       - SPRING_DATASOURCE_PASSWORD=pgli_password
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - JWT_SECRET=cGdsaV9zZWNyZXRfa2V5X3BhcmFfanNvbl93ZWJfdG9rZW5fMjAyNl9jb2RlX2ZhY3Rvcnk=
     depends_on:
       - db
     networks:

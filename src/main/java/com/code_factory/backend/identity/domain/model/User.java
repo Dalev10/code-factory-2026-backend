@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -19,10 +20,13 @@ import java.util.UUID;
 @AllArgsConstructor
 public class User {
 
-    private UUID id; 
+    private UUID id;
     private String firstName;
     private String lastName;
-    private String email; 
-    private String password;     
-    
+    private String email;
+    private String password;
+    @Builder.Default
+    private int failedAttempts = 0;
+    private LocalDateTime blockedUntil;
+
 }

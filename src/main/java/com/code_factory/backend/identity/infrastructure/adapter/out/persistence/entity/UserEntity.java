@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -35,4 +36,11 @@ public class UserEntity {
 
     @Column(nullable = false)
     private String password;
+
+    @Column(nullable = false, columnDefinition = "int not null default 0")
+    @Builder.Default
+    private int failedAttempts = 0;
+
+    @Column(nullable = true)
+    private LocalDateTime blockedUntil;
 }
