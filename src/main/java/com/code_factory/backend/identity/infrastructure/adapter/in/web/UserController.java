@@ -1,6 +1,7 @@
 package com.code_factory.backend.identity.infrastructure.adapter.in.web;
 
 import com.code_factory.backend.identity.application.port.in.LoginUserUseCase;
+import com.code_factory.backend.identity.application.port.in.LogoutUserUseCase;
 import com.code_factory.backend.identity.application.port.in.RegisterUserUseCase;
 import com.code_factory.backend.identity.domain.model.User;
 import com.code_factory.backend.identity.infrastructure.adapter.in.web.dto.LoginRequest;
@@ -8,6 +9,7 @@ import com.code_factory.backend.identity.infrastructure.adapter.in.web.dto.Login
 import com.code_factory.backend.identity.infrastructure.adapter.in.web.dto.UserRegistrationRequest;
 import com.code_factory.backend.identity.application.port.in.FindUserUseCase;
 import com.code_factory.backend.identity.infrastructure.adapter.in.web.dto.UserResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,11 +32,21 @@ public class UserController {
     private final RegisterUserUseCase registerUserUseCase;
     private final FindUserUseCase findUserUseCase;
     private final LoginUserUseCase loginUserUseCase;
+    private final LogoutUserUseCase logoutUserUseCase;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         String token = loginUserUseCase.login(request.getEmail(), request.getPassword());
         return ResponseEntity.ok(LoginResponse.builder().token(token).build());
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            logoutUserUseCase.logout(authHeader.substring(7));
+        }
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/register")

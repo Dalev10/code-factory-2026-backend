@@ -26,8 +26,9 @@ public class JwtTokenAdapter implements JwtTokenPort {
     }
 
     @Override
-    public String generateToken(UUID userId, String email) {
+    public String generateToken(UUID userId, String email, String jti) {
         return Jwts.builder()
+                .id(jti)
                 .subject(email)
                 .claim("userId", userId.toString())
                 .issuedAt(new Date())
@@ -44,6 +45,16 @@ public class JwtTokenAdapter implements JwtTokenPort {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
+    }
+
+    @Override
+    public String extractJti(String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getId();
     }
 
     @Override
