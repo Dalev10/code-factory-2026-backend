@@ -3,6 +3,7 @@ package com.code_factory.backend.identity.application.service;
 import com.code_factory.backend.identity.application.port.in.LoginUserUseCase;
 import com.code_factory.backend.identity.application.port.out.JwtTokenPort;
 import com.code_factory.backend.identity.application.port.out.PasswordEncoderPort;
+import com.code_factory.backend.identity.application.port.out.SessionRepositoryPort;
 import com.code_factory.backend.identity.application.port.out.UserRepositoryPort;
 import com.code_factory.backend.identity.domain.exception.AccountBlockedException;
 import com.code_factory.backend.identity.domain.exception.InvalidCredentialsException;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class LoginUserService implements LoginUserUseCase {
     private final UserRepositoryPort userRepositoryPort;
     private final PasswordEncoderPort passwordEncoderPort;
     private final JwtTokenPort jwtTokenPort;
+    private final SessionRepositoryPort sessionRepositoryPort;
 
     @Override
     public String login(String email, String password) {
@@ -46,6 +49,8 @@ public class LoginUserService implements LoginUserUseCase {
         user.setBlockedUntil(null);
         userRepositoryPort.save(user);
 
-        return jwtTokenPort.generateToken(user.getId(), user.getEmail());
+        String jti = UUID.randomUUID().toString();
+        sessionRepositoryPort.createSession(jti, user.getEmail());
+        return jwtTokenPort.generateToken(user.getId(), user.getEmail(), jti);
     }
 }

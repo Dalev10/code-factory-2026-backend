@@ -1,6 +1,7 @@
 package com.code_factory.backend.shared.config;
 
 import com.code_factory.backend.shared.security.JwtAuthenticationFilter;
+import com.code_factory.backend.shared.security.SecurityHeadersFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,7 +24,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   JwtAuthenticationFilter jwtAuthFilter) throws Exception {
+                                                   JwtAuthenticationFilter jwtAuthFilter,
+                                                   SecurityHeadersFilter securityHeadersFilter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
@@ -39,7 +41,8 @@ public class SecurityConfig {
                     response.getWriter().write("{\"message\":\"No autorizado\",\"status\":401}");
                 })
             )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(securityHeadersFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 }
