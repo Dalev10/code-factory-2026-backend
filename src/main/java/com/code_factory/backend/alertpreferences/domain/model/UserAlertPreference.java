@@ -13,4 +13,6 @@ public class UserAlertPreference {
     private final AlertType alertType;
     private final boolean enabled;
     private final LocalDateTime updatedAt;
+
+
 }

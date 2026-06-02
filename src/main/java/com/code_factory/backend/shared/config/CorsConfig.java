@@ -12,7 +12,7 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/v1/**")
+                registry.addMapping("/api/**")
                         .allowedOrigins("http://localhost:3000", "http://localhost:5173", "https://finanzas-personales-front-one.vercel.app") //configuración para permitir solicitudes desde el frontend
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*")
